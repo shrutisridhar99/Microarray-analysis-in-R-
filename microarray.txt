@@ -3,41 +3,35 @@
 # Read the data into R
 data = as.matrix(read.table (text = "data_GEO.csv, row.names = 1, header = T))
 
-# Check the loaded dataset
-dim(data) # Dimension of the dataset
-head(data) # First few rows
-tail(data) # Last few rows
+dim(data)
+head(data) 
+tail(data) 
 
-###################
-# Exploratory plots
-###################
 
-# Check the behavior of the data
-hist(data, col = "gray", main="GSE5583 - Histogram")
+hist(data, col = "gray", main="data_GEO - Histogram")
 
-# Log2 transformation (why?)
-data2 = log2(data)
+Log2 transformation 
+datalog = log2(data)
 
 # Check the behavior of the data after log-transformation
-hist(data2, col = "gray", main="GSE5583 (log2) - Histogram")
+hist(data2, col = "gray", main="data_GEO (log2) - Histogram")
 
 # Boxplot
-boxplot(data2, col=c("darkgreen", "darkgreen", "darkgreen",
+boxplot(datalog, col=c("darkblue", "darkblue", "darkblue",
 	"darkred", "darkred", "darkred"),
-	main="GSE5583 - boxplots", las=2)
+	main="data_GEO - boxplots", las=2)
 
-# Hierarchical clustering of the "samples" based on
-# the correlation coefficients of the expression values
-hc = hclust(as.dist(1-cor(data2)))
-plot(hc, main="GSE5583 - Hierarchical Clustering")
+Hierarchical clustering of the "samples" 
+hiclus = hclust(as.dist(1-cor(datalog)))
+plot(hiclus, main="data_GEO - Hierarchical Clustering")
 
 #######################################
 # Differential expression (DE) analysis
 #######################################
 
 # Separate the two conditions into two smaller data frames
-wt = data2[,1:3]
-ko = data2[,4:6]
+wildtype = data2[,1:3]
+knockout = data2[,4:6]
 
 # Compute the means of the samples of each condition
 wt.mean = apply(wt, 1, mean)
@@ -47,29 +41,27 @@ head(wt.mean)
 
 head(ko.mean)
 
-# Just get the maximum of all the means
-limit = max(wt.mean, ko.mean)
 
 # Scatter plot
 plot(ko.mean ~ wt.mean, xlab = "WT", ylab = "KO",
-	main = "GSE5583 - Scatter", xlim = c(0, limit), ylim = c(0, limit))
+	main = "data_GEO - Scatter", xlim = c(0, limit), ylim = c(0, limit))
 # Diagonal line
 abline(0, 1, col = "red")
 
 # Compute fold-change (biological significance)
 # Difference between the means of the conditions
-fold = wt.mean - ko.mean
+fold = wildtype.mean - knockout.mean
 
-# Histogram of the fold differences
+# fold difference
 hist(fold, col = "gray")
 
 # Compute statistical significance (using t-test)
-pvalue = NULL # Empty list for the p-values
-tstat = NULL # Empty list of the t test statistics
+pvalue = NULL 
+tstat = NULL 
 
 for(i in 1 : nrow(data)) { # For each gene : 
-	x = wt[i,] # WT of gene number i
-	y = ko[i,] # KO of gene number i
+	x = wildtypet[i,] 
+	y = knockout[i,] 
 	
 	# Compute t-test between the two conditions
 	t = t.test(x, y)
@@ -82,12 +74,12 @@ for(i in 1 : nrow(data)) { # For each gene :
 
 head(pvalue)
 
-# Histogram of p-values (-log10)
-hist(-log10(pvalue), col = "gray")
+# p-values (-log10)
+hist(-log10(pvalue), col = "darkgreen")
 
 # Volcano: put the biological significance (fold-change)
 # and statistical significance (p-value) in one plot
-plot(fold, -log10(pvalue), main = "GSE5583 - Volcano")
+plot(fold, -log10(pvalue), main = "data_GEO - Volcano")
 
 fold_cutoff = 2
 pvalue_cutoff = 0.01
@@ -95,13 +87,11 @@ abline(v = fold_cutoff, col = "blue", lwd = 3)
 abline(v = -fold_cutoff, col = "red", lwd = 3)
 abline(h = -log10(pvalue_cutoff), col = "green", lwd = 3)
 
-# Screen for the genes that satisfy the filtering criteria
 
-# Fold-change filter for "biological" significance
 filter_by_fold = abs(fold) >= fold_cutoff
 dim(data2[filter_by_fold, ])
 
-# P-value filter for "statistical" significance
+# P-value filter 
 filter_by_pvalue = pvalue <= pvalue_cutoff
 dim(data2[filter_by_pvalue, ])
 
@@ -137,8 +127,8 @@ colv = as.dendrogram(hclust(as.dist(1-cor(filtered))))
 # Generate a heatmap
 heatmap(filtered, Rowv=rowv, Colv=colv, cexCol=0.7)
 
-# install.packages("gplots")		# Uncomment if not already installed
-# install.packages("RColorBrewer")	# Uncomment if not already installed
+# install.packages("gplots")		
+# install.packages("RColorBrewer")	
 
 library(gplots)
 
@@ -146,12 +136,12 @@ library(gplots)
 heatmap.2(filtered, Rowv=rowv, Colv=colv, cexCol=0.7,
 	col = rev(redblue(256)), scale = "row")
 
-# Save the heatmap to a PDF file
-pdf ("GSE5583_DE_Heatmap.pdf")
+# Save the heatmap 
+pdf ("data_GEO_Heatmap.pdf")
 heatmap.2(filtered, Rowv=rowv, Colv=colv, cexCol=0.7,
 	col = rev(redblue(256)), scale = "row")
 dev.off()
 
 # Save the DE genes to a text file
-write.table (filtered, "GSE5583_DE.txt", sep = "\t",
+write.table (filtered, "data_GEO.txt", sep = "\t",
 	quote = FALSE)
